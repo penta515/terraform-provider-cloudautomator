@@ -31,10 +31,9 @@ jobs:
   test:
     name: test
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 15
     strategy:
       matrix:
-        os: [ubuntu-latest]
+        os: [macos-latest, windows-latest, ubuntu-18.04]
     steps:
       - name: Set up Go
         uses: actions/setup-go@v3
@@ -62,5 +61,6 @@ jobs:
           CA_TEST_SQS_AWS_ACCOUNT_ID: ${{secrets.CA_TEST_SQS_AWS_ACCOUNT_ID}}
           CA_TEST_SQS_QUEUE: ${{secrets.CA_TEST_SQS_QUEUE}}
           CA_TEST_SQS_REGION: ${{secrets.CA_TEST_SQS_REGION}}
+          CA_TEST_POST_PROCESS_ID: ${{secrets.CA_TEST_POST_PROCESS_ID}}
         run: |
           go test -v -cover ./internal/provider/ -timeout 60m
