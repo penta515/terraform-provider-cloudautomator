@@ -15,6 +15,7 @@ import (
 type Job struct {
 	Id                       string                 `json:"id,omitempty"`
 	Name                     string                 `json:"name"`
+	Active                   *bool                  `json:"active,omitempty"`
 	GroupId                  int                    `json:"group_id"`
 	AwsAccountId             int                    `json:"aws_account_id"`
 	RuleType                 string                 `json:"rule_type"`
@@ -62,7 +63,7 @@ type RawJobData struct {
 
 type JobAttributes struct {
 	Name                     string                 `json:"name"`
-	Active                   bool                   `json:"active"`
+	Active                   *bool                  `json:"active"`
 	GroupID                  int                    `json:"group_id"`
 	AwsAccountId             int                    `json:"aws_account_id"`
 	RuleType                 string                 `json:"rule_type"`
@@ -275,6 +276,7 @@ func (j *Job) UnmarshalJSON(data []byte) error {
 
 	j.Id = rj.Id
 	j.Name = rj.Attributes.Name
+	j.Active = rj.Attributes.Active
 	j.GroupId = rj.Attributes.GroupID
 	j.AwsAccountId = rj.Attributes.AwsAccountId
 	j.RuleType = rj.Attributes.RuleType

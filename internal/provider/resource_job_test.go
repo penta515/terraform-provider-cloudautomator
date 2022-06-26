@@ -1860,6 +1860,45 @@ func TestAccCloudAutomatorJob_WindowsUpdateV2Action(t *testing.T) {
 	})
 }
 
+func TestAccCloudAutomatorJob_ActiveFalse(t *testing.T) {
+	resourceName := "cloudautomator_job.test"
+	jobName := fmt.Sprintf("tf-testacc-job-%s", utils.RandomString(12))
+	sqsAwsAccountId := acctest.TestSqsAwsAccountId()
+	sqsRegion := acctest.TestSqsRegion()
+	sqsQueue := acctest.TestSqsQueue()
+	postProcessId := acctest.TestPostProcessId()
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:          func() { testAccPreCheck(t) },
+		ProviderFactories: testAccProviderFactories,
+		CheckDestroy:      testAccCheckCloudAutomatorJobDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCheckCloudAutomatorJobConfigActiveFalse(jobName),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckCloudAutomatorJobExists(testAccProviders["cloudautomator"], resourceName),
+					resource.TestCheckResourceAttr(
+						resourceName, "name", jobName),
+					resource.TestCheckResourceAttr(
+						resourceName, "active", "false"),
+					resource.TestCheckResourceAttr(
+						resourceName, "rule_type", "sqs_v2"),
+					resource.TestCheckResourceAttr(
+						resourceName, "sqs_v2_rule_value.0.sqs_aws_account_id", sqsAwsAccountId),
+					resource.TestCheckResourceAttr(
+						resourceName, "sqs_v2_rule_value.0.sqs_region", sqsRegion),
+					resource.TestCheckResourceAttr(
+						resourceName, "sqs_v2_rule_value.0.queue", sqsQueue),
+					resource.TestCheckResourceAttr(
+						resourceName, "completed_post_process_id.0", postProcessId),
+					resource.TestCheckResourceAttr(
+						resourceName, "failed_post_process_id.0", postProcessId),
+				),
+			},
+		},
+	})
+}
+
 func testAccCheckCloudAutomatorJobExists(accProvider *schema.Provider, n string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		c := testAccProvider.Meta().(*client.Client)
@@ -3000,4 +3039,28 @@ resource "cloudautomator_job" "test" {
 	completed_post_process_id = [%s]
 	failed_post_process_id = [%s]
 }`, rName, acctest.TestGroupId(), acctest.TestAwsAccountId(), acctest.TestPostProcessId(), acctest.TestPostProcessId())
+}
+
+func testAccCheckCloudAutomatorJobConfigActiveFalse(rName string) string {
+	return fmt.Sprintf(`
+resource "cloudautomator_job" "test" {
+	name = "%s"
+	active = false
+	group_id = "%s"
+	aws_account_id = "%s"
+
+	rule_type = "sqs_v2"
+	sqs_v2_rule_value {
+		sqs_aws_account_id = "%s"
+		sqs_region = "%s"
+		queue = "%s"
+	}
+
+	action_type = "delay"
+	delay_action_value {
+		delay_minutes = 1
+	}
+	completed_post_process_id = [%s]
+	failed_post_process_id = [%s]
+}`, rName, acctest.TestGroupId(), acctest.TestAwsAccountId(), acctest.TestSqsAwsAccountId(), acctest.TestSqsRegion(), acctest.TestSqsQueue(), acctest.TestPostProcessId(), acctest.TestPostProcessId())
 }

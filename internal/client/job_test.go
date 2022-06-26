@@ -57,9 +57,11 @@ func TestJob_Get(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	active := true
 	expect := &Job{
 		Id:           "1000",
 		Name:         "test-job",
+		Active:       &active,
 		GroupId:      1,
 		AwsAccountId: 1,
 		RuleType:     "cron",
@@ -196,10 +198,12 @@ func TestJob_List(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	active := true
 	expect := &[]Job{
 		{
 			Id:           "1000",
 			Name:         "test-job",
+			Active:       &active,
 			GroupId:      1,
 			AwsAccountId: 1,
 			RuleType:     "cron",
@@ -223,6 +227,7 @@ func TestJob_List(t *testing.T) {
 		{
 			Id:           "2000",
 			Name:         "test-job",
+			Active:       &active,
 			GroupId:      1,
 			AwsAccountId: 1,
 			RuleType:     "cron",
@@ -296,9 +301,11 @@ func TestJob_Create(t *testing.T) {
 	job := new(Job)
 	createdJob, _, err := c.CreateJob(job)
 
+	active := true
 	expect := &Job{
 		Id:           "1000",
 		Name:         "test-job",
+		Active:       &active,
 		GroupId:      1,
 		AwsAccountId: 1,
 		RuleType:     "cron",
@@ -376,9 +383,11 @@ func TestJob_Update(t *testing.T) {
 	}
 	updatedJob, _, err := c.UpdateJob(job)
 
+	active := true
 	expect := &Job{
 		Id:           "1000",
 		Name:         "test-job",
+		Active:       &active,
 		GroupId:      1,
 		AwsAccountId: 1,
 		RuleType:     "cron",

@@ -3,6 +3,7 @@ package cloudautomator
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"terraform-provider-cloudautomator/internal/client"
 	schemes "terraform-provider-cloudautomator/internal/schemes/job"
@@ -29,6 +30,12 @@ func resourceJob() *schema.Resource {
 				Description: "ジョブ名",
 				Type:        schema.TypeString,
 				Required:    true,
+			},
+			"active": {
+				Description: "ジョブの状態",
+				Type:        schema.TypeBool,
+				Optional:    true,
+				Default:     true,
 			},
 			"group_id": {
 				Description: "グループID",
@@ -515,6 +522,41 @@ func resourceJobCreate(ctx context.Context, d *schema.ResourceData, m interface{
 		return diags
 	}
 
+	// ジョブを OFF 状態で作成することが出来ないため、
+	// 一度作成した後にジョブの状態を OFF に切り替える API (/jobs/{id}/active) を呼び出す。
+	if v, ok := d.GetOkExists("active"); ok {
+		active := v.(bool)
+
+		if !active {
+			// SQSトリガージョブの場合、ジョブを作成した直後に OFF に切り替える操作を行うと、
+			// イベントリソースマッピング関連のエラーが発生する場合があるため、
+			// ジョブを作成した後に10秒間待機してから OFF に切り替える。
+			if j.RuleType == "sqs_v2" {
+				time.Sleep(time.Second * 10)
+			} else {
+				time.Sleep(time.Second * 2)
+			}
+
+			dj, _, err := c.DeactivateJob(j.Id)
+			if err != nil {
+				// ジョブの状態を OFF に切り替える操作に失敗したら、
+				// 作成したジョブを削除して終了する。
+				time.Sleep(time.Second * 10)
+
+				_, err := c.DeleteJob(j.Id)
+				if err != nil {
+					diags = append(diags, diag.Errorf("The job has been created in an invalid state. Please delete the job manually. job.id=%s, reason=%s", j.Id, err)...)
+					return diags
+				}
+
+				diags = append(diags, diag.FromErr(err)...)
+				return diags
+			}
+
+			j.Active = dj.Active
+		}
+	}
+
 	d.SetId(j.Id)
 
 	return resourceJobRead(ctx, d, m)
@@ -534,6 +576,7 @@ func resourceJobRead(ctx context.Context, d *schema.ResourceData, m interface{})
 
 	d.Set("id", job.Id)
 	d.Set("name", job.Name)
+	d.Set("active", job.Active)
 	d.Set("group_id", job.GroupId)
 	d.Set("aws_account_id", job.AwsAccountId)
 
@@ -618,9 +661,28 @@ func resourceJobUpdate(ctx context.Context, d *schema.ResourceData, m interface{
 		job.FailedPostProcessId = utils.ExpandIntList(d.Get("failed_post_process_id").([]interface{}))
 	}
 
-	if _, _, err := c.UpdateJob(job); err != nil {
+	j, _, err := c.UpdateJob(job)
+	if err != nil {
 		diags = append(diags, diag.FromErr(err)...)
 		return diags
+	}
+
+	if v, ok := d.GetOkExists("active"); ok {
+		active := v.(bool)
+
+		var err error
+		if active != *j.Active {
+			if active {
+				_, _, err = c.ActivateJob(j.Id)
+			} else {
+				_, _, err = c.DeactivateJob(j.Id)
+			}
+
+			if err != nil {
+				diags = append(diags, diag.FromErr(err)...)
+				return diags
+			}
+		}
 	}
 
 	return resourceJobRead(ctx, d, m)

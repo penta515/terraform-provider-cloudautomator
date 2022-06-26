@@ -115,7 +115,8 @@ func (c *Client) Do(req *http.Request, v interface{}) (*http.Response, error) {
 			"unmarshal failed",
 		)
 	}
-	time.Sleep(time.Second * 1)
+	// throttling
+	time.Sleep(time.Second * 2)
 
 	return resp, err
 }
