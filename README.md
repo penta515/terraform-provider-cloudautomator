@@ -66,7 +66,8 @@ terraform {
 provider "cloudautomator" {}
 
 resource "cloudautomator_job" "example-job" {
-  name = "example-job"
+  name   = "example-job"
+  active = true
 
   group_id       = 10
   aws_account_id = 20
