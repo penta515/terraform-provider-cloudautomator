@@ -32,7 +32,7 @@ clean:
 
 test-unit:
 	@go test ${GO_PACKAGES} || exit 1
-	@echo ${GO_PACKAGES} | xargs -t -n4 go test $(TESTARGS) -timeout=30s -parallel=4
+	@echo ${GO_PACKAGES} | xargs -t -n4 go test $(TESTARGS) -timeout=60s -parallel=4
 
 test-acc-e2e:
 	TF_ACC=1 go test -v -cover -timeout 60m ./internal/provider
